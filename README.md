@@ -1,17 +1,62 @@
-# Vanilla JS Single Page Application
+# Vanilla JS SPA Engine
 
-This project is a Single Page Application (SPA) engine built entirely with pure JavaScript. It does not use any external libraries or frameworks for the application code or the testing logic.
+A Single Page Application engine built with plain JavaScript. It converts multi-page websites into single-page applications without requiring external libraries.
 
-## Current Implementation Status
+## How to Use the Engine
 
-All core requirements for the SPA engine have been implemented:
-- **Routing:** Intercepts link clicks and uses the Browser History API to update the URL without a full page reload.
-- **Content Loading:** Fetches HTML content and replaces the document body.
-- **Script Execution:** Evaluates and runs `<script>` tags found in the new HTML content.
-- **Component Caching:** Allows specific elements (marked with `data-cache-id`) to be saved in memory and restored between page navigations, keeping their state intact.
-- **Loading UI:** Displays a simple progress bar while new pages are being fetched.
-- **Unit Tests:** Includes a custom testing setup (in the `tests/` folder) to verify the engine's behavior directly in the browser.
-- **Deployment:** A GitHub Actions workflow is set up to deploy the `src/` folder to GitHub Pages when changes are merged to the main branch.
+### 1. Initialization
+Import the engine in your main JavaScript file and define which URL paths the engine should manage.
+
+```javascript
+import { Engine } from './core/engine.js';
+
+const engine = new Engine({
+    enabled: true, // Turn the SPA behavior on or off
+    routes: [
+        '*.html',        // Matches all HTML files
+        '/site/*',       // Matches anything in the /site/ folder
+        '/exact-path',   // Exact path match
+        /^\/api\/.*$/,   // Regular expressions
+        (path) => path.startsWith('/dynamic') // Custom functions
+    ]
+});
+```
+
+### 2. Protect Core Scripts
+To stop the engine from running your main application code again every time a new page loads, you must add the `data-spa-core` attribute to your main script tag in your HTML.
+
+```html
+<script type="module" src="./app.js" data-spa-core></script>
+```
+
+### 3. Exclude Specific Links
+If you want a specific link to trigger a normal page reload instead of being handled by the engine, add the `data-no-spa` attribute:
+
+```html
+<a href="/about.html" data-no-spa="true">Normal Page Reload</a>
+```
+
+### 4. Component Caching
+To keep a component's state (like text in an input field or a checkbox) when moving between pages, add a unique `data-cache-id` to its container.
+
+```html
+<div data-cache-id="my-sidebar">
+    <!-- Component content -->
+</div>
+```
+When a user clicks a link, the engine takes this exact HTML element and places it into the new page. You can listen for the `spa:save` and `spa:restore` events on this element to save and load your custom JavaScript data.
+
+---
+
+## How it Works
+
+1. **Click Detection**: The engine listens for all clicks on the page. When it detects a click on a link, it checks if the link matches your defined routes and ensures the user isn't holding down a modifier key (like Ctrl or Command).
+2. **Fetching Content**: If the link matches, the engine stops the default browser loading process, shows a loading bar, and downloads the new HTML content using the `fetch` function. 
+3. **Updating the Page**: The engine reads the new HTML, extracts the body and the title, and replaces the current page content. During this process, it keeps track of the cached components and places them in the new page. A limit is enforced on how many components are kept in memory to prevent the application from slowing down over time.
+4. **Running Scripts**: Browsers do not run scripts when HTML is updated this way. The engine manually copies all new script tags and inserts them into the page to force the browser to run them (ignoring scripts marked with `data-spa-core`).
+5. **Browser History**: The engine updates the web address bar and manages the back and forward browser buttons using the History API.
+
+---
 
 ## Architecture Flow
 
@@ -44,9 +89,9 @@ sequenceDiagram
 
 ## How to Run
 
-Because the project uses ES6 modules, the files need to be served via a local web server. The project includes a `package.json` that provides a local server specifically for development.
+The files need to be served via a local web server because ES6 modules are used.
 
-1. Install the local server dependency:
+1. Install the local server:
    ```bash
    npm install
    ```
