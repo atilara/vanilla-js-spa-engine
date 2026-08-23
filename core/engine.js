@@ -161,8 +161,7 @@ export class Engine {
     executeScripts(container) {
         const scripts = container.querySelectorAll('script')
         scripts.forEach((oldScript) => {
-            const src = oldScript.getAttribute('src')
-            if (src && (src.endsWith('engine.js') || src.endsWith('app.js'))) {
+            if (oldScript.hasAttribute('data-spa-core')) {
                 return
             }
 
