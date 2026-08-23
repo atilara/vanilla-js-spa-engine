@@ -213,6 +213,43 @@ it('ComponentCache: should retain native DOM state (like input.value) across sim
     assertEqual(pageB.firstElementChild.value, 'Hello World from Page A')
 })
 
+it('ComponentCache: should evict the oldest entry when maxSize is exceeded (LRU limit)', () => {
+    const cache = new ComponentCache(2)
+
+    const pageA = createMockPage('<div data-cache-id="item1"></div>')
+    const pageB = createMockPage('<div data-cache-id="item2"></div>')
+    const pageC = createMockPage('<div data-cache-id="item3"></div>')
+
+    cache.save(pageA)
+    cache.save(pageB)
+    cache.save(pageC)
+
+    assertFalse(cache.cache.has('item1'))
+    assertTrue(cache.cache.has('item2'))
+    assertTrue(cache.cache.has('item3'))
+    assertEqual(cache.cache.size, 2)
+})
+
+it('ComponentCache: should update access order on restore to prevent active items from being evicted', () => {
+    const cache = new ComponentCache(2)
+
+    const pageA = createMockPage('<div data-cache-id="item1"></div>')
+    const pageB = createMockPage('<div data-cache-id="item2"></div>')
+
+    cache.save(pageA)
+    cache.save(pageB)
+
+    const restorePage = createMockPage('<div data-cache-id="item1"></div>')
+    cache.restore(restorePage)
+
+    const pageC = createMockPage('<div data-cache-id="item3"></div>')
+    cache.save(pageC)
+
+    assertFalse(cache.cache.has('item2'))
+    assertTrue(cache.cache.has('item1'))
+    assertTrue(cache.cache.has('item3'))
+})
+
 it('LoadingBar: should inject the #spa-loading-bar element into the DOM', () => {
     const bar = new LoadingBar()
     bar.start()
