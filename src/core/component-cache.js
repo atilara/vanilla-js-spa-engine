@@ -1,6 +1,7 @@
 export class ComponentCache {
-    constructor() {
+    constructor(maxSize = 10) {
         this.cache = new Map()
+        this.maxSize = maxSize
     }
 
     save(container) {
@@ -8,6 +9,11 @@ export class ComponentCache {
 
         container.querySelectorAll('[data-cache-id]').forEach((node) => {
             const id = node.getAttribute('data-cache-id')
+
+            if (this.cache.has(id)) {
+                this.cache.delete(id)
+            }
+
             const state = {}
 
             node.dispatchEvent(
@@ -17,6 +23,11 @@ export class ComponentCache {
             )
 
             this.cache.set(id, { node, state })
+
+            if (this.cache.size > this.maxSize) {
+                const oldestKey = this.cache.keys().next().value
+                this.cache.delete(oldestKey)
+            }
         })
     }
 
@@ -30,6 +41,9 @@ export class ComponentCache {
                 const cached = this.cache.get(id)
 
                 if (cached && cached.node) {
+                    this.cache.delete(id)
+                    this.cache.set(id, cached)
+
                     placeholder.replaceWith(cached.node)
 
                     cached.node.dispatchEvent(
