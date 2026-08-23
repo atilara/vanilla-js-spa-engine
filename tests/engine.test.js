@@ -6,6 +6,7 @@ import {
 } from './test-micro-framework.js'
 import { Engine } from '../src/core/engine.js'
 import { ComponentCache } from '../src/core/component-cache.js'
+import { LoadingBar } from '../src/core/loading-bar.js'
 
 function createLink(href, attrs = {}) {
     const a = document.createElement('a')
@@ -72,6 +73,26 @@ it('Engine: shouldIntercept should return true for wildcard SPA links', () => {
     assertTrue(testEngine.shouldIntercept(link))
 })
 
+it('Engine: shouldIntercept should return false if engine is disabled', () => {
+    const disabledEngine = new Engine({ enabled: false, routes: ['*'] })
+    const link = createLink(`${window.location.origin}/about.html`)
+    assertFalse(disabledEngine.shouldIntercept(link))
+})
+
+it('Engine: shouldIntercept should return false for links with target="_blank"', () => {
+    const link = createLink(`${window.location.origin}/about.html`, {
+        target: '_blank',
+    })
+    assertFalse(testEngine.shouldIntercept(link))
+})
+
+it('Engine: shouldIntercept should return false for download links', () => {
+    const link = createLink(`${window.location.origin}/file.pdf`, {
+        download: '',
+    })
+    assertFalse(testEngine.shouldIntercept(link))
+})
+
 it('Engine: renderPage should correctly update document.title and document.body', () => {
     const originalTitle = document.title
     const originalChildren = Array.from(document.body.childNodes)
@@ -89,6 +110,34 @@ it('Engine: renderPage should correctly update document.title and document.body'
 
     assertTrue(isTitleUpdated)
     assertTrue(isInjectedHeaderPresent)
+})
+
+it('Engine: executeScripts should clone and replace script tags to force execution', () => {
+    const container = document.createElement('div')
+    container.innerHTML =
+        '<script id="test-script">window.__TEST_VAR = true;</script>'
+
+    const originalScript = container.querySelector('script')
+    testEngine.executeScripts(container)
+    const newScript = container.querySelector('script')
+
+    assertFalse(originalScript === newScript)
+    assertEqual(newScript.textContent, 'window.__TEST_VAR = true;')
+})
+
+it('Engine: executeScripts should ignore engine.js and app.js to prevent re-initialization', () => {
+    const container = document.createElement('div')
+    container.innerHTML = `
+        <script src="/src/core/engine.js"></script>
+        <script src="/src/app.js"></script>
+    `
+
+    const originalScripts = Array.from(container.querySelectorAll('script'))
+    testEngine.executeScripts(container)
+    const newScripts = Array.from(container.querySelectorAll('script'))
+
+    assertTrue(originalScripts[0] === newScripts[0])
+    assertTrue(originalScripts[1] === newScripts[1])
 })
 
 it('ComponentCache: should correctly save DOM nodes marked with data-cache-id', () => {
@@ -162,4 +211,16 @@ it('ComponentCache: should retain native DOM state (like input.value) across sim
 
     assertTrue(pageB.firstElementChild === inputNode)
     assertEqual(pageB.firstElementChild.value, 'Hello World from Page A')
+})
+
+it('LoadingBar: should inject the #spa-loading-bar element into the DOM', () => {
+    const bar = new LoadingBar()
+    bar.start()
+
+    const element = document.getElementById('spa-loading-bar')
+    assertTrue(element !== null)
+    assertEqual(element.style.opacity, '1')
+    assertEqual(element.style.width, '70%')
+
+    element.remove()
 })
