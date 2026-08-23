@@ -125,11 +125,11 @@ it('Engine: executeScripts should clone and replace script tags to force executi
     assertEqual(newScript.textContent, 'window.__TEST_VAR = true;')
 })
 
-it('Engine: executeScripts should ignore engine.js and app.js to prevent re-initialization', () => {
+it('Engine: executeScripts should ignore scripts with data-spa-core to prevent re-initialization', () => {
     const container = document.createElement('div')
     container.innerHTML = `
-        <script src="/src/core/engine.js"></script>
-        <script src="/src/app.js"></script>
+        <script src="main.bundle.js" data-spa-core></script>
+        <script src="analytics.js" data-spa-core></script>
     `
 
     const originalScripts = Array.from(container.querySelectorAll('script'))
