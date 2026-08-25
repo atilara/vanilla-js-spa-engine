@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A lightweight, dependency-free Vanilla JS Single Page Application engine",
   "scripts": {
-    "start": "live-server src --entry-file=index.html",
+    "start": "live-server src",
     "test": "live-server . --open=tests/index.html --entry-file=tests/index.html"
   },
   "devDependencies": {
