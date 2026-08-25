@@ -139,20 +139,20 @@ export class Engine {
     }
 
     /**
-     * Navigates to a specified URL and pushes history state upon success.
+     * Navigates to a specified URL and pushes history state.
      * @param {!string} url Target URL to navigate to.
      */
     navigateTo(url) {
-        this.router(url, true)
+        window.history.pushState(null, null, url)
+        this.router(url)
     }
 
     /**
      * Fetches and renders page content for the specified URL.
      * @param {!string=} opt_url Target URL to load.
-     * @param {boolean=} shouldPushState Whether to push state to history upon success.
      * @return {!Promise<void>}
      */
-    async router(url = window.location.href, shouldPushState = false) {
+    async router(url = window.location.href) {
         this.loadingBar.start()
 
         try {
@@ -164,10 +164,6 @@ export class Engine {
 
             const html = await response.text()
             this.renderPage(html)
-
-            if (shouldPushState) {
-                window.history.pushState(null, null, url)
-            }
         } catch (error) {
             document.body.innerHTML = '<h1>404</h1><p>Page not found.</p>'
         } finally {
