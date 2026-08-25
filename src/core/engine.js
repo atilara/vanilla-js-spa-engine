@@ -21,6 +21,12 @@ export class Engine {
             return
         }
 
+        if (!document.querySelector('base')) {
+            const base = document.createElement('base')
+            base.href = './'
+            document.head.appendChild(base)
+        }
+
         const start = () => {
             document.body.addEventListener('click', (e) => {
                 const link = e.target.closest('a')
