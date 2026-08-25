@@ -15,20 +15,25 @@ function initDemoWidget() {
     const btn = widget.querySelector('.demo-btn')
     const clicksSpan = widget.querySelector('.demo-clicks')
 
+    const updateDisplay = () => {
+        clicksSpan.textContent = clicks
+    }
+
     widget.addEventListener('spa:save', (e) => {
         e.detail.state.clicks = clicks
     })
 
     widget.addEventListener('spa:restore', (e) => {
-        if (e.detail.state && e.detail.state.clicks !== undefined) {
-            clicks = e.detail.state.clicks
-            clicksSpan.textContent = clicks
+        const savedClicks = e.detail?.state?.clicks
+        if (savedClicks !== undefined) {
+            clicks = savedClicks
+            updateDisplay()
         }
     })
 
     btn.addEventListener('click', () => {
         clicks++
-        clicksSpan.textContent = clicks
+        updateDisplay()
     })
 
     widget.dataset.initialized = 'true'
