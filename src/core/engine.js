@@ -26,13 +26,14 @@ export class Engine {
                 const link = e.target.closest('a')
                 if (!link) return
 
-                if (
+                const isModifiedOrNonPrimaryClick =
                     e.metaKey ||
                     e.ctrlKey ||
                     e.shiftKey ||
                     e.altKey ||
                     e.button !== 0
-                ) {
+
+                if (isModifiedOrNonPrimaryClick) {
                     return
                 }
 
@@ -60,37 +61,39 @@ export class Engine {
      * @return {!boolean} True if the route matches.
      */
     isRouteMatched(url) {
-        if (
-            !this.routes ||
-            !Array.isArray(this.routes) ||
-            this.routes.length === 0
-        ) {
+        if (!Array.isArray(this.routes) || this.routes.length === 0) {
             return false
         }
 
         const pathname = new URL(url, window.location.origin).pathname
+        return this.routes.some((pattern) =>
+            this._matchesPattern(pattern, pathname)
+        )
+    }
 
-        return this.routes.some((pattern) => {
-            if (pattern instanceof RegExp) {
-                return pattern.test(pathname)
-            }
-            if (typeof pattern === 'function') {
-                return pattern(pathname)
-            }
-            if (typeof pattern === 'string') {
-                const escaped = pattern
-                    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-                    .replace(/\*/g, '.*')
-                const regex = new RegExp(`^${escaped}$`)
-                const cleanPath = pathname.replace(/^\//, '')
-                return (
-                    regex.test(pathname) ||
-                    regex.test(cleanPath) ||
-                    (pathname === '/' && (pattern === '/' || pattern === '*'))
-                )
-            }
-            return false
-        })
+    /**
+     * Tests a single route pattern against a URL pathname.
+     * @param {!string|!RegExp|!Function} pattern Route pattern to test.
+     * @param {!string} pathname Normalized pathname.
+     * @return {!boolean} True if the pattern matches the pathname.
+     * @private
+     */
+    _matchesPattern(pattern, pathname) {
+        if (pattern instanceof RegExp) {
+            return pattern.test(pathname)
+        }
+        if (typeof pattern === 'function') {
+            return pattern(pathname)
+        }
+        if (typeof pattern === 'string') {
+            const escaped = pattern
+                .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+                .replace(/\*/g, '.*')
+            const regex = new RegExp(`^${escaped}$`)
+            const cleanPath = pathname.replace(/^\//, '')
+            return regex.test(pathname) || regex.test(cleanPath)
+        }
+        return false
     }
 
     /**
@@ -103,25 +106,32 @@ export class Engine {
             return false
         }
 
-        if (link.hasAttribute('data-no-spa')) {
-            const val = link.getAttribute('data-no-spa')
-            if (val === '' || val === 'true' || val === 'data-no-spa') {
-                return false
-            }
-        }
-
-        if (link.origin !== window.location.origin) {
+        const noSpaVal = link.getAttribute('data-no-spa')
+        const isExplicitNoSpa =
+            link.hasAttribute('data-no-spa') &&
+            (noSpaVal === '' || noSpaVal === 'true' || noSpaVal === 'data-no-spa')
+        if (isExplicitNoSpa) {
             return false
         }
 
-        if (link.pathname === window.location.pathname && link.hash) {
+        const isExternalOrigin = link.origin !== window.location.origin
+        if (isExternalOrigin) {
             return false
         }
 
-        if (link.target && link.target !== '_self') {
+        const isSamePageHash =
+            link.pathname === window.location.pathname && Boolean(link.hash)
+        if (isSamePageHash) {
             return false
         }
-        if (link.hasAttribute('download')) {
+
+        const isNonSelfTarget = link.target && link.target !== '_self'
+        if (isNonSelfTarget) {
+            return false
+        }
+
+        const isDownloadLink = link.hasAttribute('download')
+        if (isDownloadLink) {
             return false
         }
 
