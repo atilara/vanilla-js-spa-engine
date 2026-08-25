@@ -1,3 +1,6 @@
+const CACHE_ATTR = 'data-cache-id'
+const CACHE_SELECTOR = `[${CACHE_ATTR}]`
+
 export class ComponentCache {
     /**
      * Initializes the component cache with a maximum capacity.
@@ -16,13 +19,8 @@ export class ComponentCache {
     save(container) {
         if (!container) return
 
-        container.querySelectorAll('[data-cache-id]').forEach((node) => {
-            const id = node.getAttribute('data-cache-id')
-
-            if (this.cache.has(id)) {
-                this.cache.delete(id)
-            }
-
+        container.querySelectorAll(CACHE_SELECTOR).forEach((node) => {
+            const id = node.getAttribute(CACHE_ATTR)
             const state = {}
 
             node.dispatchEvent(
@@ -31,12 +29,8 @@ export class ComponentCache {
                 })
             )
 
-            this.cache.set(id, { node, state })
-
-            if (this.cache.size > this.maxSize) {
-                const oldestKey = this.cache.keys().next().value
-                this.cache.delete(oldestKey)
-            }
+            this._touch(id, { node, state })
+            this._evictOldestIfFull()
         })
     }
 
@@ -47,24 +41,42 @@ export class ComponentCache {
     restore(newContainer) {
         if (!newContainer) return
 
-        newContainer
-            .querySelectorAll('[data-cache-id]')
-            .forEach((placeholder) => {
-                const id = placeholder.getAttribute('data-cache-id')
-                const cached = this.cache.get(id)
+        newContainer.querySelectorAll(CACHE_SELECTOR).forEach((placeholder) => {
+            const id = placeholder.getAttribute(CACHE_ATTR)
+            const cached = this.cache.get(id)
 
-                if (cached && cached.node) {
-                    this.cache.delete(id)
-                    this.cache.set(id, cached)
+            if (cached && cached.node) {
+                this._touch(id, cached)
+                placeholder.replaceWith(cached.node)
 
-                    placeholder.replaceWith(cached.node)
+                cached.node.dispatchEvent(
+                    new CustomEvent('spa:restore', {
+                        detail: { state: cached.state },
+                    })
+                )
+            }
+        })
+    }
 
-                    cached.node.dispatchEvent(
-                        new CustomEvent('spa:restore', {
-                            detail: { state: cached.state },
-                        })
-                    )
-                }
-            })
+    /**
+     * Refreshes the entry's access order in the LRU map.
+     * @param {!string} id Component cache key.
+     * @param {!Object} entry Cache entry holding node and state.
+     * @private
+     */
+    _touch(id, entry) {
+        this.cache.delete(id)
+        this.cache.set(id, entry)
+    }
+
+    /**
+     * Evicts the least recently used component when capacity is exceeded.
+     * @private
+     */
+    _evictOldestIfFull() {
+        if (this.cache.size > this.maxSize) {
+            const oldestKey = this.cache.keys().next().value
+            this.cache.delete(oldestKey)
+        }
     }
 }
