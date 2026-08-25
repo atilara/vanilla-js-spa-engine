@@ -2,6 +2,11 @@ import { LoadingBar } from './loading-bar.js'
 import { ComponentCache } from './component-cache.js'
 
 export class Engine {
+    /**
+     * Initializes the SPA engine with routes and configuration.
+     * @param {!Object=} opt_options Configuration options.
+     * @constructor
+     */
     constructor(options = {}) {
         this.routes = options.routes || []
         this.enabled = options.enabled !== undefined ? options.enabled : true
@@ -14,6 +19,12 @@ export class Engine {
     init() {
         if (!this.enabled) {
             return
+        }
+
+        if (!document.querySelector('base')) {
+            const base = document.createElement('base')
+            base.href = './'
+            document.head.appendChild(base)
         }
 
         const start = () => {
@@ -49,6 +60,11 @@ export class Engine {
         }
     }
 
+    /**
+     * Checks if a URL matches any registered route pattern.
+     * @param {!string} url Target URL to test against routes.
+     * @return {!boolean} True if the route matches.
+     */
     isRouteMatched(url) {
         if (
             !this.routes ||
@@ -83,6 +99,11 @@ export class Engine {
         })
     }
 
+    /**
+     * Determines whether an anchor element should be intercepted for SPA.
+     * @param {!HTMLAnchorElement} link Anchor element to check.
+     * @return {!boolean} True if the link should be intercepted.
+     */
     shouldIntercept(link) {
         if (!this.enabled || !link || link.tagName !== 'A') {
             return false
@@ -113,11 +134,20 @@ export class Engine {
         return this.isRouteMatched(link.href)
     }
 
+    /**
+     * Navigates to a specified URL and pushes history state.
+     * @param {!string} url Target URL to navigate to.
+     */
     navigateTo(url) {
         window.history.pushState(null, null, url)
         this.router(url)
     }
 
+    /**
+     * Fetches and renders page content for the specified URL.
+     * @param {!string=} opt_url Target URL to load.
+     * @return {!Promise<void>}
+     */
     async router(url = window.location.href) {
         this.loadingBar.start()
 
@@ -137,6 +167,10 @@ export class Engine {
         }
     }
 
+    /**
+     * Parses and renders incoming HTML into the document body.
+     * @param {!string} html Raw HTML content of the page.
+     */
     renderPage(html) {
         const parser = new DOMParser()
         const newDoc = parser.parseFromString(html, 'text/html')
@@ -158,6 +192,10 @@ export class Engine {
         document.dispatchEvent(new CustomEvent('spa:rendered'))
     }
 
+    /**
+     * Re-creates and executes scripts found within the given container.
+     * @param {!HTMLElement} container Container element containing scripts.
+     */
     executeScripts(container) {
         const scripts = container.querySelectorAll('script')
         scripts.forEach((oldScript) => {

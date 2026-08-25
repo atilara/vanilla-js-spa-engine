@@ -1,9 +1,18 @@
 export class ComponentCache {
+    /**
+     * Initializes the component cache with a maximum capacity.
+     * @param {!number=} opt_maxSize Maximum number of components to cache.
+     * @constructor
+     */
     constructor(maxSize = 10) {
         this.cache = new Map()
         this.maxSize = maxSize
     }
 
+    /**
+     * Captures and stores state for all cacheable components in the container.
+     * @param {!HTMLElement} container DOM element to scan for components.
+     */
     save(container) {
         if (!container) return
 
@@ -31,6 +40,10 @@ export class ComponentCache {
         })
     }
 
+    /**
+     * Restores cached component nodes and states into the target container.
+     * @param {!HTMLElement} newContainer Incoming container with placeholder elements.
+     */
     restore(newContainer) {
         if (!newContainer) return
 
