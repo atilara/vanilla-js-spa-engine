@@ -22,10 +22,9 @@ export class LoadingBar {
         }
 
         if (!document.contains(this.element)) {
-            if (document.body) {
-                document.body.appendChild(this.element)
-            } else if (document.documentElement) {
-                document.documentElement.appendChild(this.element)
+            const root = document.body || document.documentElement
+            if (root) {
+                root.appendChild(this.element)
             }
         }
     }
@@ -49,14 +48,13 @@ export class LoadingBar {
         this.ensureElement()
         this.element.style.width = '100%'
         setTimeout(() => {
-            if (this.element) {
-                this.element.style.opacity = '0'
-                setTimeout(() => {
-                    if (this.element) {
-                        this.element.style.width = '0%'
-                    }
-                }, 300)
-            }
+            if (!this.element) return
+            this.element.style.opacity = '0'
+            setTimeout(() => {
+                if (this.element) {
+                    this.element.style.width = '0%'
+                }
+            }, 300)
         }, 200)
     }
 }
