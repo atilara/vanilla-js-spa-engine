@@ -21,12 +21,6 @@ export class Engine {
             return
         }
 
-        if (!document.querySelector('base')) {
-            const base = document.createElement('base')
-            base.href = './'
-            document.head.appendChild(base)
-        }
-
         const start = () => {
             document.body.addEventListener('click', (e) => {
                 const link = e.target.closest('a')
@@ -145,20 +139,20 @@ export class Engine {
     }
 
     /**
-     * Navigates to a specified URL and pushes history state.
+     * Navigates to a specified URL and pushes history state upon success.
      * @param {!string} url Target URL to navigate to.
      */
     navigateTo(url) {
-        window.history.pushState(null, null, url)
-        this.router(url)
+        this.router(url, true)
     }
 
     /**
      * Fetches and renders page content for the specified URL.
      * @param {!string=} opt_url Target URL to load.
+     * @param {boolean=} shouldPushState Whether to push state to history upon success.
      * @return {!Promise<void>}
      */
-    async router(url = window.location.href) {
+    async router(url = window.location.href, shouldPushState = false) {
         this.loadingBar.start()
 
         try {
@@ -170,6 +164,10 @@ export class Engine {
 
             const html = await response.text()
             this.renderPage(html)
+
+            if (shouldPushState) {
+                window.history.pushState(null, null, url)
+            }
         } catch (error) {
             document.body.innerHTML = '<h1>404</h1><p>Page not found.</p>'
         } finally {
