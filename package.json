@@ -2,11 +2,22 @@
   "name": "vanilla-js-spa-engine",
   "version": "1.0.0",
   "description": "A lightweight, dependency-free Vanilla JS Single Page Application engine",
+  "type": "module",
+  "main": "src/core/engine.js",
+  "module": "src/core/engine.js",
+  "files": [
+    "src/core",
+    "dist"
+  ],
   "scripts": {
     "start": "live-server src",
-    "test": "live-server . --open=tests/index.html --entry-file=tests/index.html"
+    "test": "live-server . --open=tests/index.html --entry-file=tests/index.html",
+    "build:core": "esbuild src/core/*.js --minify --out-extension:.js=.min.js --outdir=dist/core",
+    "build:bundle": "esbuild src/core/engine.js --bundle --minify --format=esm --outfile=dist/core/engine.esm.min.js",
+    "build": "npm run build:core && npm run build:bundle"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "live-server": "^1.2.2"
   }
 }
